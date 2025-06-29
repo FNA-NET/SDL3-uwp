@@ -607,6 +607,8 @@ typedef unsigned int uintptr_t;
 
 #ifdef SDL_PLATFORM_PRIVATE
 #include "SDL_end_config_private.h"
-#endif
+
+#cmakedefine __XBOXSERIES__ 1
+#cmakedefine SDL_PLATFORM_XBOXSERIES 1
 
 #endif /* SDL_build_config_h_ */
