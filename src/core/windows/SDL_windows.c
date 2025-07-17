@@ -53,6 +53,7 @@ typedef enum RO_INIT_TYPE
 #define WC_ERR_INVALID_CHARS 0x00000080
 #endif
 
+#if !defined(SDL_PLATFORM_WINRT) && !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
 // Fake window to help with DirectInput events.
 HWND SDL_HelperWindow = NULL;
 static const TCHAR *SDL_HelperWindowClassName = TEXT("SDLHelperWindowInputCatcher");
@@ -124,6 +125,20 @@ void SDL_HelperWindowDestroy(void)
         SDL_HelperWindowClass = 0;
     }
 }
+#else
+// Stub implementations for UWP/Xbox platforms
+HWND SDL_HelperWindow = NULL;
+
+bool SDL_HelperWindowCreate(void)
+{
+    return true; // No-op for UWP/Xbox
+}
+
+void SDL_HelperWindowDestroy(void)
+{
+    // No-op for UWP/Xbox
+}
+#endif
 
 // Sets an error message based on an HRESULT
 bool WIN_SetErrorFromHRESULT(const char *prefix, HRESULT hr)
