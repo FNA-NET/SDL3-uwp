@@ -613,4 +613,5 @@ typedef unsigned int uintptr_t;
 #cmakedefine SDL_VIDEO_DRIVER_KEYBOARD_WINRT 1
 #cmakedefine SDL_VIDEO_DRIVER_POINTER_WINRT 1
 
+#endif /* SDL_PLATFORM_PRIVATE */
 #endif /* SDL_build_config_h_ */
