@@ -1420,7 +1420,11 @@ void SDL_PumpEventMaintenance(void)
     }
 #endif
 
+#ifdef SDL_PLATFORM_WINRT
+    // No-op for UWP/WinRT which doesn't support system tray
+#else
     SDL_UpdateTrays();
+#endif
 
     SDL_SendPendingSignalEvents(); // in case we had a signal handler fire, etc.
 }

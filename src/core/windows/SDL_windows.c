@@ -217,6 +217,7 @@ FARPROC WIN_LoadComBaseFunction(const char *name)
     }
 }
 
+#if !defined(SDL_PLATFORM_WINRT)
 HRESULT
 WIN_RoInitialize(void)
 {
@@ -240,17 +241,20 @@ WIN_RoInitialize(void)
         return E_NOINTERFACE;
     }
 }
+#endif // SDL_PLATFORM_WINRT
 
 void WIN_RoUninitialize(void)
 {
+#if !defined(SDL_PLATFORM_WINRT)
     typedef void(WINAPI * RoUninitialize_t)(void);
     RoUninitialize_t RoUninitializeFunc = (RoUninitialize_t)WIN_LoadComBaseFunction("RoUninitialize");
     if (RoUninitializeFunc) {
         RoUninitializeFunc();
     }
+#endif // SDL_PLATFORM_WINRT
 }
 
-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
+#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(SDL_PLATFORM_WINRT)
 static BOOL IsWindowsVersionOrGreater(WORD wMajorVersion, WORD wMinorVersion, WORD wServicePackMajor)
 {
     OSVERSIONINFOEXW osvi;
@@ -272,7 +276,7 @@ static BOOL IsWindowsVersionOrGreater(WORD wMajorVersion, WORD wMinorVersion, WO
 #endif
 
 // apply some static variables so we only call into the Win32 API once per process for each check.
-#if defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)
+#if defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES) || defined(SDL_PLATFORM_WINRT)
     #define CHECKWINVER(notdesktop_platform_result, test) return (notdesktop_platform_result);
 #else
     #define CHECKWINVER(notdesktop_platform_result, test) \
