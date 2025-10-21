@@ -236,6 +236,10 @@ static bool join_env(char **env, LPWSTR *env_out)
 
 bool SDL_SYS_CreateProcessWithProperties(SDL_Process *process, SDL_PropertiesID props)
 {
+#ifdef SDL_PLATFORM_WINRT
+    SDL_SetError("Process creation is not supported on UWP/WinRT");
+    return false;
+#else
     const char * const *args = SDL_GetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, NULL);
     SDL_Environment *env = SDL_GetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ENVIRONMENT_POINTER, SDL_GetEnvironment());
     char **envp = NULL;
@@ -494,6 +498,7 @@ done:
         }
     }
     return result;
+#endif // SDL_PLATFORM_WINRT
 }
 
 bool SDL_SYS_KillProcess(SDL_Process *process, bool force)

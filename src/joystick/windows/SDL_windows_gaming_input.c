@@ -589,9 +589,11 @@ static bool WGI_JoystickInit(void)
         return true;
     }
 
+#if !defined(SDL_PLATFORM_WINRT)
     if (FAILED(WIN_RoInitialize())) {
         return SDL_SetError("RoInitialize() failed");
     }
+#endif // SDL_PLATFORM_WINRT
 
 #ifdef SDL_PLATFORM_WINRT
     wgi.CoIncrementMTAUsage = CoIncrementMTAUsage;
@@ -1012,7 +1014,9 @@ static void WGI_JoystickQuit(void)
         __x_ABI_CWindows_CGaming_CInput_CIRawGameControllerStatics_Release(wgi.controller_statics);
     }
 
+#if !defined(SDL_PLATFORM_WINRT)
     WIN_RoUninitialize();
+#endif // SDL_PLATFORM_WINRT
 
     SDL_zero(wgi);
 }
