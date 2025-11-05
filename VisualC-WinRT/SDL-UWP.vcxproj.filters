@@ -327,9 +327,7 @@
     <ClInclude Include="..\src\render\opengles2\SDL_shaders_gles2.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\render\SDL_d3dmath.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
+
     <ClInclude Include="..\src\render\SDL_sysrender.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -684,9 +682,7 @@
     <ClCompile Include="..\src\render\opengles2\SDL_shaders_gles2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\render\SDL_d3dmath.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+
     <ClCompile Include="..\src\render\SDL_render.c">
       <Filter>Source Files</Filter>
     </ClCompile>
