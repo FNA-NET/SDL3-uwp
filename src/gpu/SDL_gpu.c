@@ -79,6 +79,42 @@
         return;                                                                               \
     }
 
+#define CHECK_SAMPLER_TEXTURES                                                              \
+    do {                                                                                     \
+        RenderPass *rp = (RenderPass *)render_pass;                                          \
+        GraphicsPipelineCommonHeader *pipeline = (GraphicsPipelineCommonHeader *)RENDERPASS_BOUND_PIPELINE; \
+        if (pipeline != NULL) {                                                             \
+            for (Uint32 i = 0; i < pipeline->num_vertex_samplers; i += 1) {                 \
+                if (!rp->vertex_sampler_bound[i]) {                                          \
+                    SDL_assert_release(!"Missing vertex sampler binding!");                  \
+                }                                                                           \
+            }                                                                               \
+            for (Uint32 i = 0; i < pipeline->num_fragment_samplers; i += 1) {              \
+                if (!rp->fragment_sampler_bound[i]) {                                        \
+                    SDL_assert_release(!"Missing fragment sampler binding!");                \
+                }                                                                           \
+            }                                                                               \
+        }                                                                                   \
+    } while (0)
+
+#define CHECK_STORAGE_TEXTURES                                                               \
+    do {                                                                                     \
+        RenderPass *rp = (RenderPass *)render_pass;                                          \
+        GraphicsPipelineCommonHeader *pipeline = (GraphicsPipelineCommonHeader *)RENDERPASS_BOUND_PIPELINE; \
+        if (pipeline != NULL) {                                                             \
+            for (Uint32 i = 0; i < pipeline->num_vertex_storage_textures; i += 1) {        \
+                if (!rp->vertex_storage_texture_bound[i]) {                                 \
+                    SDL_assert_release(!"Missing vertex storage texture binding!");         \
+                }                                                                           \
+            }                                                                               \
+            for (Uint32 i = 0; i < pipeline->num_fragment_storage_textures; i += 1) {      \
+                if (!rp->fragment_storage_texture_bound[i]) {                              \
+                    SDL_assert_release(!"Missing fragment storage texture binding!");       \
+                }                                                                           \
+            }                                                                               \
+        }                                                                                   \
+    } while (0)
+
 #define CHECK_COPYPASS                                     \
     if (!((Pass *)copy_pass)->in_progress) {               \
         SDL_assert_release(!"Copy pass not in progress!"); \
@@ -1750,6 +1786,7 @@ SDL_GPURenderPass *SDL_BeginGPURenderPass(
 
     if (COMMAND_BUFFER_DEVICE->debug_mode) {
         commandBufferHeader->render_pass.in_progress = true;
+        commandBufferHeader->graphics_pipeline_bound = false;
         for (Uint32 i = 0; i < num_color_targets; i += 1) {
             commandBufferHeader->render_pass.color_targets[i] = color_target_infos[i].texture;
         }
@@ -1784,6 +1821,7 @@ void SDL_BindGPUGraphicsPipeline(
 
     if (RENDERPASS_DEVICE->debug_mode) {
         RENDERPASS_BOUND_PIPELINE = graphics_pipeline;
+        ((CommandBufferCommonHeader *)RENDERPASS_COMMAND_BUFFER)->graphics_pipeline_bound = true;
     }
 }
 
@@ -1937,7 +1975,7 @@ void SDL_BindGPUVertexSamplers(
 
         if (!((CommandBufferCommonHeader*)RENDERPASS_COMMAND_BUFFER)->ignore_render_pass_texture_validation)
         {
-            CHECK_SAMPLER_TEXTURES
+            CHECK_SAMPLER_TEXTURES;
         }
 
         for (Uint32 i = 0; i < num_bindings; i += 1) {
@@ -1969,7 +2007,7 @@ void SDL_BindGPUVertexStorageTextures(
 
     if (RENDERPASS_DEVICE->debug_mode) {
         CHECK_RENDERPASS
-        CHECK_STORAGE_TEXTURES
+        CHECK_STORAGE_TEXTURES;
 
         for (Uint32 i = 0; i < num_bindings; i += 1) {
             ((RenderPass *)render_pass)->vertex_storage_texture_bound[first_slot + i] = true;
@@ -2032,7 +2070,7 @@ void SDL_BindGPUFragmentSamplers(
         CHECK_RENDERPASS
 
         if (!((CommandBufferCommonHeader*)RENDERPASS_COMMAND_BUFFER)->ignore_render_pass_texture_validation) {
-            CHECK_SAMPLER_TEXTURES
+            CHECK_SAMPLER_TEXTURES;
         }
 
         for (Uint32 i = 0; i < num_bindings; i += 1) {
@@ -2064,7 +2102,7 @@ void SDL_BindGPUFragmentStorageTextures(
 
     if (RENDERPASS_DEVICE->debug_mode) {
         CHECK_RENDERPASS
-        CHECK_STORAGE_TEXTURES
+        CHECK_STORAGE_TEXTURES;
 
         for (Uint32 i = 0; i < num_bindings; i += 1) {
             ((RenderPass *)render_pass)->fragment_storage_texture_bound[first_slot + i] = true;
@@ -2321,6 +2359,7 @@ SDL_GPUComputePass *SDL_BeginGPUComputePass(
 
     if (COMMAND_BUFFER_DEVICE->debug_mode) {
         commandBufferHeader->compute_pass.in_progress = true;
+        commandBufferHeader->compute_pipeline_bound = false;
 
         for (Uint32 i = 0; i < num_storage_texture_bindings; i += 1) {
             commandBufferHeader->compute_pass.read_write_storage_texture_bound[i] = true;
@@ -2358,6 +2397,7 @@ void SDL_BindGPUComputePipeline(
 
     if (COMPUTEPASS_DEVICE->debug_mode) {
         COMPUTEPASS_BOUND_PIPELINE = compute_pipeline;
+        ((CommandBufferCommonHeader *)COMPUTEPASS_COMMAND_BUFFER)->compute_pipeline_bound = true;
     }
 }
 

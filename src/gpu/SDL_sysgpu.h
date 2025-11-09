@@ -92,6 +92,8 @@ typedef struct CommandBufferCommonHeader
     bool submitted;
     // used to avoid tripping assert on GenerateMipmaps
     bool ignore_render_pass_texture_validation;
+    bool graphics_pipeline_bound;
+    bool compute_pipeline_bound;
 } CommandBufferCommonHeader;
 
 typedef struct TextureCommonHeader
