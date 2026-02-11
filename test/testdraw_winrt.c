@@ -41,7 +41,7 @@ void DrawPoints(SDL_Renderer *renderer)
 {
     int i;
     float x, y;
-    SDL_FRect viewport;
+    SDL_Rect viewport;
 
     /* Query the sizes */
     SDL_GetRenderViewport(renderer, &viewport);
@@ -75,7 +75,7 @@ void DrawLines(SDL_Renderer *renderer)
 {
     int i;
     float x1, y1, x2, y2;
-    SDL_FRect viewport;
+    SDL_Rect viewport;
 
     /* Query the sizes */
     SDL_GetRenderViewport(renderer, &viewport);
@@ -111,7 +111,7 @@ void DrawRects(SDL_Renderer *renderer)
 {
     int i;
     SDL_FRect rect;
-    SDL_FRect viewport;
+    SDL_Rect viewport;
 
     /* Query the sizes */
     SDL_GetRenderViewport(renderer, &viewport);

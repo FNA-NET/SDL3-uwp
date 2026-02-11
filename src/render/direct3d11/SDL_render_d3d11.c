@@ -2999,7 +2999,11 @@ static bool D3D11_CreateRenderer(SDL_Renderer *renderer, SDL_Window *window, SDL
 {
     D3D11_RenderData *data;
 
+#ifdef SDL_PLATFORM_WINRT
+    HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WINRT_WINDOW_POINTER, NULL);
+#else
     HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+#endif
     if (!hwnd) {
         return SDL_SetError("Couldn't get window handle");
     }
