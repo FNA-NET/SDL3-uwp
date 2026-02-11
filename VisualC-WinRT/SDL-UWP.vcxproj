@@ -490,13 +490,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -525,11 +525,11 @@
     <IncludePath>$(SolutionDir)/../src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      <ClCompile>
-        <PrecompiledHeader>Use</PrecompiledHeader>
-        <CompileAsWinRT>false</CompileAsWinRT>
-        <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(ProjectDir)\..\include\build_config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-        <PreprocessorDefinitions>__XBOXSERIES__;SDL_PLATFORM_XBOXSERIES;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;SDL_BUILDING_WINRT=1;SDL_VIDEO_RENDER_D3D11=1;SDL_TRAY_DUMMY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(ProjectDir)\..\include\build_config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__XBOXSERIES__;SDL_PLATFORM_XBOXSERIES;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;SDL_BUILDING_WINRT=1;SDL_VIDEO_RENDER_D3D11=1;SDL_TRAY_DUMMY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>SDL_internal.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -540,11 +540,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      <ClCompile>
-        <PrecompiledHeader>Use</PrecompiledHeader>
-        <CompileAsWinRT>false</CompileAsWinRT>
-        <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(ProjectDir)\..\include\build_config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-        <PreprocessorDefinitions>__XBOXSERIES__;SDL_PLATFORM_XBOXSERIES;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;SDL_BUILDING_WINRT=1;SDL_VIDEO_RENDER_D3D11=1;SDL_TRAY_DUMMY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(ProjectDir)\..\include\build_config;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__XBOXSERIES__;SDL_PLATFORM_XBOXSERIES;DLL_EXPORT;_CRT_SECURE_NO_WARNINGS;SDL_BUILDING_WINRT=1;SDL_VIDEO_RENDER_D3D11=1;SDL_TRAY_DUMMY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>SDL_internal.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
