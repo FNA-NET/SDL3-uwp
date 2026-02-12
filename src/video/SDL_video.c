@@ -5873,8 +5873,12 @@ bool SDL_HasScreenKeyboardSupport(void)
 bool SDL_ScreenKeyboardShown(SDL_Window *window)
 {
     CHECK_WINDOW_MAGIC(window, false);
-
+#ifdef SDL_PLATFORM_UWP
+    if (_this->IsScreenKeyboardShown) {
+        return _this->IsScreenKeyboardShown(_this, window);
+#else
     return _this->screen_keyboard_shown;
+#endif
 }
 
 void SDL_SendScreenKeyboardShown(void)

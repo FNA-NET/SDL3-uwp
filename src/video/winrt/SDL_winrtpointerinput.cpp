@@ -20,7 +20,7 @@
 */
 #include "SDL_internal.h"
 
-#ifdef SDL_VIDEO_DRIVER_WINRT || SDL_VIDEO_DRIVER_POINTER_WINRT
+#if defined(SDL_VIDEO_DRIVER_WINRT) || defined(SDL_VIDEO_DRIVER_POINTER_WINRT)
 
 // SDL includes
 #include "SDL_winrtevents_c.h"
