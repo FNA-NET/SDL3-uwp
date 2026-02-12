@@ -53,7 +53,7 @@ SDL_ELF_NOTE_DLOPEN(
     "Support for async IO through liburing",
     SDL_ELF_NOTE_DLOPEN_PRIORITY_SUGGESTED,
     SDL_DRIVER_LIBURING_DYNAMIC
-);
+)
 
 #define SDL_LIBURING_FUNCS \
     SDL_LIBURING_FUNC(int, io_uring_queue_init, (unsigned entries, struct io_uring *ring, unsigned flags)) \
@@ -252,7 +252,7 @@ static SDL_AsyncIOTask *ProcessCQE(LibUringAsyncIOQueueData *queuedata, struct i
             }
         }
 
-        if ((task->type == SDL_ASYNCIO_TASK_CLOSE) && task->flush) {
+        if (task && (task->type == SDL_ASYNCIO_TASK_CLOSE) && task->flush) {
             task->flush = false;
             task = NULL;  // don't return this one, it's a linked task, so it'll arrive in a later CQE.
         }

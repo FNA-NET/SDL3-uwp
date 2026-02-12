@@ -44,6 +44,7 @@ struct SDL_PrivateAudioData
     bool device_lost;
     bool device_dead;
     void *activation_handler;
+    bool isplayback;
 };
 
 // win32 and winrt implementations call into these.

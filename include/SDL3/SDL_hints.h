@@ -391,11 +391,45 @@ extern "C" {
  * concept, so it applies to a physical audio device in this case, and not an
  * SDL_AudioStream, nor an SDL logical audio device.
  *
+ * For Windows WASAPI audio, the following roles are supported, and map to
+ * `AUDIO_STREAM_CATEGORY`:
+ *
+ * - "Other" (default)
+ * - "Communications" - Real-time communications, such as VOIP or chat
+ * - "Game" - Game audio
+ * - "GameChat" - Game chat audio, similar to "Communications" except that
+ *   this will not attenuate other audio streams
+ * - "Movie" - Music or sound with dialog
+ * - "Media" - Music or sound without dialog
+ *
+ * If your application applies its own echo cancellation, gain control, and
+ * noise reduction it should also set SDL_HINT_AUDIO_DEVICE_RAW_STREAM.
+ *
  * This hint should be set before an audio device is opened.
  *
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_AUDIO_DEVICE_STREAM_ROLE "SDL_AUDIO_DEVICE_STREAM_ROLE"
+
+/**
+ * Specify whether this audio device should do audio processing.
+ *
+ * Some operating systems perform echo cancellation, gain control, and noise
+ * reduction as needed. If your application already handles these, you can set
+ * this hint to prevent the OS from doing additional audio processing.
+ *
+ * This corresponds to the WASAPI audio option `AUDCLNT_STREAMOPTIONS_RAW`.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": audio processing can be done by the OS. (default)
+ * - "1": audio processing is done by the application.
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.4.0.
+ */
+#define SDL_HINT_AUDIO_DEVICE_RAW_STREAM "SDL_AUDIO_DEVICE_RAW_STREAM"
 
 /**
  * Specify the input file when recording audio using the disk audio driver.
@@ -691,9 +725,8 @@ extern "C" {
  * The variable can be set to the following values:
  *
  * - "1": Enable fast parameter error checking, e.g. quick NULL checks, etc.
- *   (default)
  * - "2": Enable full parameter error checking, e.g. validating objects are
- *   the correct type, etc.
+ *   the correct type, etc. (default)
  *
  * This hint can be set anytime.
  *
@@ -1051,6 +1084,21 @@ extern "C" {
  */
 #define SDL_HINT_HIDAPI_LIBUSB "SDL_HIDAPI_LIBUSB"
 
+
+/**
+ * A variable to control whether HIDAPI uses libusb for GameCube adapters.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": HIDAPI will not use libusb for GameCube adapters.
+ * - "1": HIDAPI will use libusb for GameCube adapters if available. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.2.0.
+ */
+#define SDL_HINT_HIDAPI_LIBUSB_GAMECUBE "SDL_HIDAPI_LIBUSB_GAMECUBE"
+
 /**
  * A variable to control whether HIDAPI uses libusb only for whitelisted
  * devices.
@@ -1157,8 +1205,8 @@ extern "C" {
 #define SDL_HINT_IME_IMPLEMENTED_UI "SDL_IME_IMPLEMENTED_UI"
 
 /**
- * A variable controlling whether the home indicator bar on iPhone X should be
- * hidden.
+ * A variable controlling whether the home indicator bar on iPhone X and later
+ * should be hidden.
  *
  * The variable can be set to the following values:
  *
@@ -2357,9 +2405,9 @@ extern "C" {
  *   pressing the 1 key would yield the keycode SDLK_1, or '1', instead of
  *   SDLK_AMPERSAND, or '&'
  * - "latin_letters": For keyboards using non-Latin letters, such as Russian
- *   or Thai, the letter keys generate keycodes as though it had an en_US
- *   layout. e.g. pressing the key associated with SDL_SCANCODE_A on a Russian
- *   keyboard would yield 'a' instead of a Cyrillic letter.
+ *   or Thai, the letter keys generate keycodes as though it had an English
+ *   QWERTY layout. e.g. pressing the key associated with SDL_SCANCODE_A on a
+ *   Russian keyboard would yield 'a' instead of a Cyrillic letter.
  *
  * The default value for this hint is "french_numbers,latin_letters"
  *
@@ -2417,6 +2465,27 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER "SDL_KMSDRM_REQUIRE_DRM_MASTER"
+
+/**
+ * A variable that controls whether KMSDRM will use "atomic" functionality.
+ *
+ * The KMSDRM backend can use atomic commits, if both DRM_CLIENT_CAP_ATOMIC
+ * and DRM_CLIENT_CAP_UNIVERSAL_PLANES is supported by the system. As of SDL
+ * 3.4.0, it will favor this functionality, but in case this doesn't work well
+ * on a given system or other surprises, this hint can be used to disable it.
+ *
+ * This hint can not enable the functionality if it isn't available.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": SDL will not use the KMSDRM "atomic" functionality.
+ * - "1": SDL will allow usage of the KMSDRM "atomic" functionality. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.4.0.
+ */
+#define SDL_HINT_KMSDRM_ATOMIC "SDL_KMSDRM_ATOMIC"
 
 /**
  * A variable controlling the default SDL log levels.
@@ -2545,6 +2614,21 @@ extern "C" {
 #define SDL_HINT_MAC_SCROLL_MOMENTUM "SDL_MAC_SCROLL_MOMENTUM"
 
 /**
+ * A variable controlling whether holding down a key will repeat the pressed
+ * key or open the accents menu on macOS.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Holding a key will open the accents menu for that key.
+ * - "1": Holding a key will repeat the pressed key. (default)
+ *
+ * This hint needs to be set before SDL_Init().
+ *
+ * \since This hint is available since SDL 3.4.0.
+ */
+#define SDL_HINT_MAC_PRESS_AND_HOLD "SDL_MAC_PRESS_AND_HOLD"
+
+/**
  * Request SDL_AppIterate() be called at a specific rate.
  *
  * If this is set to a number, it represents Hz, so "60" means try to iterate
@@ -2622,6 +2706,24 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_MOUSE_DEFAULT_SYSTEM_CURSOR "SDL_MOUSE_DEFAULT_SYSTEM_CURSOR"
+
+/**
+ * A variable setting whether we should scale cursors by the current display
+ * scale.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Cursors will not change size based on the display content scale.
+ *   (default)
+ * - "1": Cursors will automatically match the display content scale (e.g. a
+ *   2x sized cursor will be used when the window is on a monitor with 200%
+ *   scale). This is currently implemented on Windows and Wayland.
+ *
+ * This hint needs to be set before creating cursors.
+ *
+ * \since This hint is available since SDL 3.4.0.
+ */
+#define SDL_HINT_MOUSE_DPI_SCALE_CURSORS "SDL_MOUSE_DPI_SCALE_CURSORS"
 
 /**
  * A variable controlling whether warping a hidden mouse cursor will activate
@@ -3454,10 +3556,12 @@ extern "C" {
  * prioritized in the list of displays, as exposed by calling
  * SDL_GetDisplays(), with the first listed becoming the primary display. The
  * naming convention can vary depending on the environment, but it is usually
- * a connector name (e.g. 'DP-1', 'DP-2', 'HDMI-A-1',etc...).
+ * a connector name (e.g. 'DP-1', 'DP-2', 'HDMI-A-1', etc...).
  *
- * On Wayland and X11 desktops, the connector names associated with displays
- * can typically be found by using the `xrandr` utility.
+ * On Wayland desktops, the connector names associated with displays can be
+ * found in the `name` property of the info output from `wayland-info -i
+ * wl_output`. On X11 desktops, the `xrandr` utility can be used to retrieve
+ * the connector names associated with displays.
  *
  * This hint is currently supported on the following drivers:
  *
@@ -3595,6 +3699,23 @@ extern "C" {
 #define SDL_HINT_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY "SDL_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY"
 
 /**
+ * A variable indicating whether the metal layer drawable size should be
+ * updated for the SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED event on macOS.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": the metal layer drawable size will not be updated on the
+ *   SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED event.
+ * - "1": the metal layer drawable size will be updated on the
+ *   SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED event. (default)
+ *
+ * This hint should be set before SDL_Metal_CreateView called.
+ *
+ * \since This hint is available since SDL 3.4.0.
+ */
+#define SDL_HINT_VIDEO_METAL_AUTO_RESIZE_DRAWABLE "SDL_VIDEO_METAL_AUTO_RESIZE_DRAWABLE"
+
+/**
  * A variable controlling whether SDL will attempt to automatically set the
  * destination display to a mode most closely matching that of the previous
  * display if an exclusive fullscreen window is moved onto it.
@@ -3621,8 +3742,10 @@ extern "C" {
  * The variable can be set to the following values:
  *
  * - "0": Fullscreen windows will not be minimized when they lose focus.
- *   (default)
  * - "1": Fullscreen windows are minimized when they lose focus.
+ * - "auto": Fullscreen windows are minimized when they lose focus if they use
+ *   exclusive fullscreen modes, so the desktop video mode is restored.
+ *   (default)
  *
  * This hint can be set anytime.
  *
@@ -4268,9 +4391,8 @@ extern "C" {
  *
  * The variable can be set to the following values:
  *
- * - "0": GameInput is not used for raw keyboard and mouse events.
+ * - "0": GameInput is not used for raw keyboard and mouse events. (default)
  * - "1": GameInput is used for raw keyboard and mouse events, if available.
- *   (default)
  *
  * This hint should be set before SDL is initialized.
  *
@@ -4291,6 +4413,28 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_WINDOWS_RAW_KEYBOARD "SDL_WINDOWS_RAW_KEYBOARD"
+
+/**
+ * A variable controlling whether or not the RIDEV_NOHOTKEYS flag is set when
+ * enabling Windows raw keyboard events.
+ *
+ * This blocks any hotkeys that have been registered by applications from
+ * having any effect beyond generating raw WM_INPUT events.
+ *
+ * This flag does not affect system-hotkeys like ALT-TAB or CTRL-ALT-DEL, but
+ * does affect the Windows Logo key since it is a userland hotkey registered
+ * by explorer.exe.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Hotkeys are not excluded. (default)
+ * - "1": Hotkeys are excluded.
+ *
+ * This hint can be set anytime.
+ *
+ * \since This hint is available since SDL 3.4.0.
+ */
+#define SDL_HINT_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS "SDL_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS"
 
 /**
  * A variable controlling whether SDL uses Kernel Semaphores on Windows.
@@ -4706,31 +4850,6 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_PEN_TOUCH_EVENTS "SDL_PEN_TOUCH_EVENTS"
-
-/**
- * A variable controlling whether SDL logs some debug information.
- *
- * The variable can be set to the following values:
- *
- * - "0": SDL debug information will not be logged. (default)
- * - "1": SDL debug information will be logged.
- *
- * This is generally meant to be used as an environment variable to let
- * end-users report what subsystems were chosen on their system, perhaps what
- * sort of hardware they are running on, etc, to aid in debugging. Logged
- * information is sent through SDL_Log(), which means by default they appear
- * on stdout on most platforms, or maybe OutputDebugString() on Windows, and
- * can be funneled by the app with SDL_SetLogOutputFunction(), etc.
- *
- * The specific output might change between SDL versions; more information
- * might be deemed useful in the future.
- *
- * This hint can be set anytime, but the specific logs are generated during
- * subsystem init.
- *
- * \since This hint is available since SDL 3.4.0.
- */
-#define SDL_HINT_DEBUG_LOGGING "SDL_DEBUG_LOGGING"
 
 /**
  * An enumeration of hint priorities.

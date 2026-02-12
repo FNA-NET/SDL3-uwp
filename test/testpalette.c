@@ -12,7 +12,7 @@
 /* Simple program:  Move N sprites around on the screen as fast as possible */
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_test_memory.h>
+#include <SDL3/SDL_test.h>
 #include <SDL3/SDL_main.h>
 
 #ifdef SDL_PLATFORM_EMSCRIPTEN
@@ -327,21 +327,25 @@ static bool CreateTextures()
     if (!black_texture1) {
         return false;
     }
+    SDL_SetTextureScaleMode(black_texture1, SDL_SCALEMODE_NEAREST);
 
     black_texture2 = CreateTexture(data, SDL_arraysize(data));
     if (!black_texture2) {
         return false;
     }
+    SDL_SetTextureScaleMode(black_texture2, SDL_SCALEMODE_NEAREST);
 
     white_texture1 = CreateTexture(data, SDL_arraysize(data));
     if (!white_texture1) {
         return false;
     }
+    SDL_SetTextureScaleMode(white_texture1, SDL_SCALEMODE_NEAREST);
 
     white_texture2 = CreateTexture(data, SDL_arraysize(data));
     if (!white_texture2) {
         return false;
     }
+    SDL_SetTextureScaleMode(white_texture2, SDL_SCALEMODE_NEAREST);
 
     return true;
 }
@@ -451,31 +455,39 @@ static void loop(void)
 int main(int argc, char *argv[])
 {
     SDL_Window *window = NULL;
-    int return_code = -1;
-    bool pixelart = false;
+    int i, return_code = -1;
+    SDLTest_CommonState *state;
 
-    SDLTest_TrackAllocations();
+    state = SDLTest_CommonCreateState(argv, 0);
+    if (!state) {
+        goto quit;
+    }
 
-    if (argv[1]) {
-        if (SDL_strcmp(argv[1], "--pixelart") == 0) {
-            pixelart = true;
-        } else {
-            SDL_Log("Usage: %s [--pixelart]", argv[0]);
+    for (i = 1; i < argc; ) {
+        int consumed = SDLTest_CommonArg(state, i);
+        SDL_Log("consumed=%d", consumed);
+        if (consumed == 0) {
+            if (SDL_strcmp(argv[i], "--renderer") == 0 && argv[i + 1]) {
+                SDL_SetHint(SDL_HINT_RENDER_DRIVER, argv[i + 1]);
+                consumed = 2;
+            }
+        }
+        if (consumed <= 0) {
+            static const char *options[] = {
+                "[--renderer RENDERER]",
+                NULL,
+            };
+            SDLTest_CommonLogUsage(state, argv[0], options);
             return_code = 1;
             goto quit;
         }
+        i += consumed;
     }
 
     if (!SDL_CreateWindowAndRenderer("testpalette", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_Log("SDL_CreateWindowAndRenderer failed: %s", SDL_GetError());
         return_code = 2;
         goto quit;
-    }
-
-    if (pixelart) {
-        SDL_SetDefaultTextureScaleMode(renderer, SDL_SCALEMODE_PIXELART);
-    } else {
-        SDL_SetDefaultTextureScaleMode(renderer, SDL_SCALEMODE_NEAREST);
     }
 
     if (!CreateTextures()) {
@@ -500,6 +512,6 @@ quit:
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-    SDLTest_LogAllocations();
+    SDLTest_CommonDestroyState(state);
     return return_code;
 }
