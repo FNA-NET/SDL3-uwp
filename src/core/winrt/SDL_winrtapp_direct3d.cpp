@@ -110,10 +110,10 @@ static void WINRT_ProcessWindowSizeChange() // TODO: Pass an SDL_Window-identify
             SDL_Window *window = WINRT_GlobalSDLWindow;
             SDL_WindowData *data = window->internal;
 
-            int x = (int)SDL_lroundf(data->coreWindow->Bounds.Left);
-            int y = (int)SDL_lroundf(data->coreWindow->Bounds.Top);
-            int w = (int)SDL_floorf(data->coreWindow->Bounds.Width);
-            int h = (int)SDL_floorf(data->coreWindow->Bounds.Height);
+            int x = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_lroundf(data->coreWindow->Bounds.Left));
+            int y = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_lroundf(data->coreWindow->Bounds.Top));
+            int w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Width));
+            int h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Height));
 
 #if SDL_WINAPI_FAMILY_PHONE && NTDDI_VERSION == NTDDI_WIN8
             /* WinPhone 8.0 always keeps its native window size in portrait,
@@ -230,8 +230,8 @@ void SDL_WinRTApp::OnOrientationChanged(Object ^ sender)
     SDL_Window *window = WINRT_GlobalSDLWindow;
     if (window) {
         SDL_WindowData *data = window->internal;
-        int w = (int)SDL_floorf(data->coreWindow->Bounds.Width);
-        int h = (int)SDL_floorf(data->coreWindow->Bounds.Height);
+        int w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Width));
+        int h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Height));
         SDL_SendWindowEvent(WINRT_GlobalSDLWindow, SDL_EVENT_WINDOW_RESIZED, w, h);
     }
 #endif

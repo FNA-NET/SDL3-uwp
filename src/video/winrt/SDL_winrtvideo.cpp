@@ -431,14 +431,14 @@ static bool WINRT_AddDisplaysForAdapter(SDL_VideoDevice *_this, IDXGIFactory2 *d
                 */
 
 #if (NTDDI_VERSION >= NTDDI_WIN10) || (SDL_WINRT_USE_APPLICATIONVIEW && SDL_WINAPI_FAMILY_PHONE)
-                mode.w = (int)SDL_floorf(appView->VisibleBounds.Width);
-                mode.h = (int)SDL_floorf(appView->VisibleBounds.Height);
+                mode.w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(appView->VisibleBounds.Width));
+                mode.h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(appView->VisibleBounds.Height));
 #else
                 /* On platform(s) that do not support VisibleBounds, such as Windows 8.1,
                    fall back to CoreWindow's Bounds property.
                 */
-                mode.w = (int)SDL_floorf(coreWin->Bounds.Width);
-                mode.h = (int)SDL_floorf(coreWin->Bounds.Height);
+                mode.w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(coreWin->Bounds.Width));
+                mode.h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(coreWin->Bounds.Height));
 #endif
                 mode.pixel_density = WINRT_DISPLAY_PROPERTY(LogicalDpi) / 96.0f;
                 mode.format = D3D11_DXGIFormatToSDLPixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM);
@@ -736,27 +736,27 @@ bool WINRT_CreateWindow(SDL_VideoDevice *_this, SDL_Window *window, SDL_Properti
            user choice of various things.  For now, just adapt the SDL_Window to
            whatever Windows set-up as the native-window's geometry.
         */
-        window->x = (int)SDL_lroundf(data->coreWindow->Bounds.Left);
-        window->y = (int)SDL_lroundf(data->coreWindow->Bounds.Top);
+        window->x = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_lroundf(data->coreWindow->Bounds.Left));
+        window->y = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_lroundf(data->coreWindow->Bounds.Top));
 #if NTDDI_VERSION < NTDDI_WIN10
         // On WinRT 8.x / pre-Win10, just use the size we were given.
-        window->w = (int)SDL_floorf(data->coreWindow->Bounds.Width);
-        window->h = (int)SDL_floorf(data->coreWindow->Bounds.Height);
+        window->w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Width));
+        window->h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Height));
 #else
         /* On Windows 10, we occasionally get control over window size.  For windowed
            mode apps, try this.
         */
         bool didSetSize = false;
         if ((requestedFlags & SDL_WINDOW_FULLSCREEN) == 0) {
-            const Windows::Foundation::Size size((float)window->w, (float)window->h);
+            const Windows::Foundation::Size size((float)WINRT_PHYSICAL_PIXELS_TO_DIPS(window->w), (float)WINRT_PHYSICAL_PIXELS_TO_DIPS(window->h));
             didSetSize = data->appView->TryResizeView(size);
         }
         if (!didSetSize) {
             /* We either weren't able to set the window size, or a request for
                fullscreen was made.  Get window-size info from the OS.
             */
-            window->w = (int)SDL_floorf(data->coreWindow->Bounds.Width);
-            window->h = (int)SDL_floorf(data->coreWindow->Bounds.Height);
+            window->w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Width));
+            window->h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Height));
         }
 #endif
 
@@ -787,9 +787,9 @@ void WINRT_SetWindowSize(SDL_VideoDevice *_this, SDL_Window *window)
 {
 #if NTDDI_VERSION >= NTDDI_WIN10
     SDL_WindowData *data = window->internal;
-    const Windows::Foundation::Size size((float)window->pending.w, (float)window->pending.h);
+    const Windows::Foundation::Size size((float)WINRT_PHYSICAL_PIXELS_TO_DIPS(window->pending.w), (float)WINRT_PHYSICAL_PIXELS_TO_DIPS(window->pending.h));
     if (data->appView->TryResizeView(size)) {
-        SDL_SendWindowEvent(window, SDL_EVENT_WINDOW_RESIZED, window->pending.w, window->pending.h);
+        SDL_SendWindowEvent(window, SDL_EVENT_WINDOW_RESIZED, WINRT_PHYSICAL_PIXELS_TO_DIPS(window->pending.w), WINRT_PHYSICAL_PIXELS_TO_DIPS(window->pending.h));
     }
 #endif
 }
