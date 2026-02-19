@@ -68,11 +68,11 @@ void WINRT_ProcessAcceleratorKeyActivated(Windows::UI::Core::AcceleratorKeyEvent
     switch (args->EventType) {
     case CoreAcceleratorKeyEventType::SystemKeyDown:
     case CoreAcceleratorKeyEventType::KeyDown:
-        state = 0;
+        state = 1;
         break;
     case CoreAcceleratorKeyEventType::SystemKeyUp:
     case CoreAcceleratorKeyEventType::KeyUp:
-        state = 1;
+        state = 0;
         break;
     default:
         return;
