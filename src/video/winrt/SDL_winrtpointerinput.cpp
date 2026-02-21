@@ -220,7 +220,7 @@ void WINRT_ProcessPointerPressedEvent(SDL_Window *window, Windows::UI::Input::Po
         Uint8 button, pressed;
         WINRT_GetSDLButtonForPointerPoint(pointerPoint, &button, &pressed);
         SDL_assert(pressed == 1);
-        SDL_SendMouseButton(0, window, SDL_DEFAULT_MOUSE_ID, 0, button);
+        SDL_SendMouseButton(0, window, SDL_DEFAULT_MOUSE_ID, button, pressed);
     } else {
         Windows::Foundation::Point normalizedPoint = WINRT_TransformCursorPosition(window, pointerPoint->Position, NormalizeZeroToOne);
         Windows::Foundation::Point windowPoint = WINRT_TransformCursorPosition(window, pointerPoint->Position, TransformToSDLWindowSize);
@@ -249,7 +249,7 @@ void WINRT_ProcessPointerMovedEvent(SDL_Window *window, Windows::UI::Input::Poin
         // For some odd reason Moved events are used for multiple mouse buttons
         Uint8 button, pressed;
         if (WINRT_GetSDLButtonForPointerPoint(pointerPoint, &button, &pressed)) {
-            SDL_SendMouseButton(0, window, SDL_DEFAULT_MOUSE_ID, pressed, button);
+            SDL_SendMouseButton(0, window, SDL_DEFAULT_MOUSE_ID, button, pressed);
         }
 
         SDL_SendMouseMotion(0, window, SDL_DEFAULT_MOUSE_ID, false, windowPoint.X, windowPoint.Y);
@@ -274,7 +274,7 @@ void WINRT_ProcessPointerReleasedEvent(SDL_Window *window, Windows::UI::Input::P
         Uint8 button, pressed;
         WINRT_GetSDLButtonForPointerPoint(pointerPoint, &button, &pressed);
         SDL_assert(pressed == 0);
-        SDL_SendMouseButton(0, window, SDL_DEFAULT_MOUSE_ID, 1, button);
+        SDL_SendMouseButton(0, window, SDL_DEFAULT_MOUSE_ID, button, pressed);
     } else {
         Windows::Foundation::Point normalizedPoint = WINRT_TransformCursorPosition(window, pointerPoint->Position, NormalizeZeroToOne);
 
