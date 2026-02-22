@@ -136,6 +136,11 @@ static SDL_VideoDevice *WINRT_CreateDevice(void)
     device->HideScreenKeyboard = WINRT_HideScreenKeyboard;
     device->IsScreenKeyboardShown = WINRT_IsScreenKeyboardShown;
 
+    device->StartTextInput = WINRT_StartTextInput;
+    device->StopTextInput = WINRT_StopTextInput;
+    device->UpdateTextInputArea = WINRT_UpdateTextInputArea;
+    device->ClearComposition = WINRT_ClearComposition;
+
     WINTRT_InitialiseInputPaneEvents(device);
 #endif
 

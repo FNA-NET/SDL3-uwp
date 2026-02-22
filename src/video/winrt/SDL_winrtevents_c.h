@@ -72,6 +72,11 @@ extern bool WINRT_HasScreenKeyboardSupport(SDL_VideoDevice *_this);
 extern void WINRT_ShowScreenKeyboard(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID props);
 extern void WINRT_HideScreenKeyboard(SDL_VideoDevice *_this, SDL_Window *window);
 extern bool WINRT_IsScreenKeyboardShown(SDL_VideoDevice *_this, SDL_Window *window);
+
+extern bool WINRT_StartTextInput(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID props);
+extern bool WINRT_StopTextInput(SDL_VideoDevice *_this, SDL_Window *window);
+extern bool WINRT_UpdateTextInputArea(SDL_VideoDevice *_this, SDL_Window *window);
+extern bool WINRT_ClearComposition(SDL_VideoDevice *_this, SDL_Window *window);
 #endif // NTDDI_VERSION >= ...
 
 // XAML Thread Management

@@ -22,6 +22,8 @@
 
 #if defined(SDL_VIDEO_DRIVER_WINRT) || defined(SDL_VIDEO_DRIVER_KEYBOARD_WINRT)
 
+#define MAX_EDITING_TEXT_LENGTH 36
+
 // Windows-specific includes
 #include <Windows.h>
 #include <agile.h>
@@ -35,6 +37,27 @@ extern "C" {
 }
 
 #include "SDL_winrtvideo_cpp.h"
+#include <windows.ui.text.core.h>
+#include <core/windows/SDL_windows.h>
+#include <vector>
+#include <string>
+
+using namespace Windows::UI::Core;
+using namespace Windows::UI::Input;
+using namespace Windows::UI::Text::Core;
+using namespace Windows::UI::ViewManagement;
+using namespace Windows::Foundation;
+using namespace Windows::Graphics::Display;
+
+static CoreTextEditContext^ gEditContext;
+static bool gUpdateInputArea = false;
+static SDL_Window* gCurrentWindow = nullptr;
+static std::vector<wchar_t> gCompTextBuffer;
+static bool gCompositionStarted = false;
+static int gSelectionStart = 0;
+static int gSelectionEnd = 0;
+static int gCommitLength = 0;
+static std::string gLastEditingText;
 
 static SDL_Scancode WINRT_TranslateKeycode(Windows::System::VirtualKey virtualKey, const Windows::UI::Core::CorePhysicalKeyStatus& keyStatus, Uint16 *rawcode)
 {
@@ -141,6 +164,167 @@ void WINTRT_InitialiseInputPaneEvents(SDL_VideoDevice *_this)
         inputPane->Hiding += ref new Windows::Foundation::TypedEventHandler<Windows::UI::ViewManagement::InputPane ^,
                                                                             Windows::UI::ViewManagement::InputPaneVisibilityEventArgs ^>(&WINTRT_OnInputPaneHiding);
     }
+
+    CoreTextServicesManager^ manager = CoreTextServicesManager::GetForCurrentView();
+    {
+        gEditContext = manager->CreateEditContext();
+        gEditContext->InputPaneDisplayPolicy = CoreTextInputPaneDisplayPolicy::Manual;
+    }
+
+    // The system raises this event to request a specific range of text
+    gEditContext->TextRequested += ref new TypedEventHandler<CoreTextEditContext ^, CoreTextTextRequestedEventArgs ^>(
+        [](CoreTextEditContext ^ context, CoreTextTextRequestedEventArgs ^ args) {
+            int start = args->Request->Range.StartCaretPosition;
+            int end = args->Request->Range.EndCaretPosition;
+            int len = min(end, (int)gCompTextBuffer.size()) - start;
+
+            if (gCompTextBuffer.size() > 0 && len > 0)
+                args->Request->Text = ref new Platform::String(&gCompTextBuffer[start], len);
+            else
+                args->Request->Text = ref new Platform::String(L"");
+    });
+
+    // Return the current selection
+    gEditContext->SelectionRequested += ref new TypedEventHandler<CoreTextEditContext ^, CoreTextSelectionRequestedEventArgs ^>(
+        [](CoreTextEditContext ^ context, CoreTextSelectionRequestedEventArgs ^ args) {
+            CoreTextRange range;
+            range.StartCaretPosition = gSelectionStart;
+            range.EndCaretPosition = gSelectionEnd;
+            args->Request->Selection = range;
+    });
+
+    // The system raises this event to update text in the edit control
+    gEditContext->TextUpdating += ref new TypedEventHandler<CoreTextEditContext ^, CoreTextTextUpdatingEventArgs ^>(
+        [](CoreTextEditContext ^ context, CoreTextTextUpdatingEventArgs ^ args) {
+            uint32_t start = args->Range.StartCaretPosition;
+            uint32_t end = args->Range.EndCaretPosition;
+
+            if (gCompTextBuffer.size() > 0)
+            {
+                auto pos = gCompTextBuffer.erase(gCompTextBuffer.begin() + start, gCompTextBuffer.begin() + end);
+                
+                // Insert new UTF-16 text directly
+                const wchar_t* newText = args->Text->Data();
+                gCompTextBuffer.insert(pos, newText, newText + args->Text->Length());
+            }
+            else
+            {
+                // Insert new UTF-16 text directly
+                const wchar_t* newText = args->Text->Data();
+                gCompTextBuffer.insert(gCompTextBuffer.begin(), newText, newText + args->Text->Length());
+            }
+
+            gSelectionStart = args->NewSelection.StartCaretPosition;
+            gSelectionEnd = args->NewSelection.EndCaretPosition;
+
+            // Convert new composition text to UTF-8 for logging and sending
+            char newCompBuffer[512] = {};
+            if (gCompTextBuffer.size() > gCommitLength) {
+                WideCharToMultiByte(CP_UTF8, 0, &gCompTextBuffer[gCommitLength], (int)(gCompTextBuffer.size() - gCommitLength), 
+                    newCompBuffer, sizeof(newCompBuffer), NULL, NULL);
+            }
+            
+            if (!gCompositionStarted)
+                gCommitLength = (int)gCompTextBuffer.size();
+            else
+            {
+                gLastEditingText = newCompBuffer;
+
+                if (gLastEditingText.size() <= MAX_EDITING_TEXT_LENGTH) // Hackfix: Don't send if composition text is too long, as it can cause crashes with some IMEs (e.g. Chinese Pinyin)
+                    SDL_SendEditingText(newCompBuffer, gSelectionStart - gCommitLength, gSelectionEnd - gSelectionStart);
+            }
+    });
+
+    // The system raises this event to change the selection in the edit control
+    gEditContext->SelectionUpdating += ref new TypedEventHandler<CoreTextEditContext ^, CoreTextSelectionUpdatingEventArgs ^>(
+        [](CoreTextEditContext ^ context, CoreTextSelectionUpdatingEventArgs ^ args) {
+            gSelectionStart = args->Selection.StartCaretPosition;
+            gSelectionEnd = args->Selection.EndCaretPosition;
+
+            if (gLastEditingText.size() <= MAX_EDITING_TEXT_LENGTH)
+                SDL_SendEditingText(gLastEditingText.c_str(), gSelectionStart - gCommitLength, gSelectionEnd - gSelectionStart);
+    });
+
+    gEditContext->LayoutRequested += ref new TypedEventHandler<CoreTextEditContext^, CoreTextLayoutRequestedEventArgs^>(
+        [](CoreTextEditContext^ context, CoreTextLayoutRequestedEventArgs^ args)
+    {
+        if (gCurrentWindow == nullptr)
+            return;
+        gUpdateInputArea = false;
+
+        Windows::Foundation::Rect windowRect = CoreWindow::GetForCurrentThread()->Bounds;
+        auto x = gCurrentWindow->text_input_rect.x + windowRect.Left;
+        auto y = gCurrentWindow->text_input_rect.y + windowRect.Top;
+        auto w = gCurrentWindow->text_input_rect.w;
+        auto h = gCurrentWindow->text_input_rect.h;
+        float scale = (float)DisplayInformation::GetForCurrentView()->RawPixelsPerViewPixel;
+
+        // This is the bounds of the whole control
+        args->Request->LayoutBounds->TextBounds = Windows::Foundation::Rect
+        (
+            x * scale,
+            y * scale,
+            w * scale,
+            h * scale
+        );
+    });
+
+    gEditContext->CompositionStarted += ref new TypedEventHandler<CoreTextEditContext ^, CoreTextCompositionStartedEventArgs ^>(
+        [](CoreTextEditContext ^ context, CoreTextCompositionStartedEventArgs ^ args) {
+            gCompositionStarted = true;
+        });
+
+    gEditContext->CompositionCompleted += ref new TypedEventHandler<CoreTextEditContext ^, CoreTextCompositionCompletedEventArgs ^>(
+        [](CoreTextEditContext ^ context, CoreTextCompositionCompletedEventArgs ^ args) {
+            // Convert completed composition to UTF-8 before sending
+            char utf8Buffer[512] = {};
+            if (gCompTextBuffer.size() > gCommitLength) {
+                WideCharToMultiByte(CP_UTF8, 0, &gCompTextBuffer[gCommitLength], (int)(gCompTextBuffer.size() - gCommitLength), 
+                    utf8Buffer, sizeof(utf8Buffer), NULL, NULL);
+            }
+            
+            SDL_SendKeyboardText(utf8Buffer);
+
+            gCompositionStarted = false;
+            gCommitLength = (int)gCompTextBuffer.size();
+    });
+}
+
+bool WINRT_StartTextInput(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID props)
+{
+    gCurrentWindow = window;
+
+    CoreTextRange range;
+    range.StartCaretPosition = (int)gCompTextBuffer.size();
+    range.EndCaretPosition = (int)gCompTextBuffer.size();
+    gEditContext->NotifySelectionChanged(range);
+
+    gEditContext->NotifyFocusEnter();
+    gCommitLength = (int)gCompTextBuffer.size();
+    return true;
+}
+
+bool WINRT_StopTextInput(SDL_VideoDevice *_this, SDL_Window *window)
+{
+    gEditContext->NotifyFocusLeave();
+    gCurrentWindow = nullptr;
+    return true;
+}
+
+bool WINRT_UpdateTextInputArea(SDL_VideoDevice *_this, SDL_Window *window)
+{
+    gUpdateInputArea = true;
+    gCurrentWindow = window;
+
+    gEditContext->NotifyLayoutChanged();
+    return true;
+}
+
+bool WINRT_ClearComposition(SDL_VideoDevice *_this, SDL_Window *window)
+{
+    gEditContext->NotifyFocusLeave();
+    gEditContext->NotifyFocusEnter();
+    return true;
 }
 
 bool WINRT_HasScreenKeyboardSupport(SDL_VideoDevice *_this)
