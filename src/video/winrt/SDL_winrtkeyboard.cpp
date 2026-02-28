@@ -252,20 +252,21 @@ void WINTRT_InitialiseInputPaneEvents(SDL_VideoDevice *_this)
             return;
         gUpdateInputArea = false;
 
+        float scale = (float)DisplayInformation::GetForCurrentView()->RawPixelsPerViewPixel;
+
         Windows::Foundation::Rect windowRect = CoreWindow::GetForCurrentThread()->Bounds;
-        auto x = gCurrentWindow->text_input_rect.x + windowRect.Left;
-        auto y = gCurrentWindow->text_input_rect.y + windowRect.Top;
+        auto x = gCurrentWindow->text_input_rect.x + windowRect.Left * scale;
+        auto y = gCurrentWindow->text_input_rect.y + windowRect.Top * scale;
         auto w = gCurrentWindow->text_input_rect.w;
         auto h = gCurrentWindow->text_input_rect.h;
-        float scale = (float)DisplayInformation::GetForCurrentView()->RawPixelsPerViewPixel;
 
         // This is the bounds of the whole control
         args->Request->LayoutBounds->TextBounds = Windows::Foundation::Rect
         (
-            x * scale,
-            y * scale,
-            w * scale,
-            h * scale
+            x,
+            y,
+            w,
+            h
         );
     });
 
