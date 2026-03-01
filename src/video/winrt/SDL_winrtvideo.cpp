@@ -793,7 +793,16 @@ void WINRT_SetWindowSize(SDL_VideoDevice *_this, SDL_Window *window)
 #if NTDDI_VERSION >= NTDDI_WIN10
     SDL_WindowData *data = window->internal;
     const Windows::Foundation::Size size((float)WINRT_PHYSICAL_PIXELS_TO_DIPS(window->pending.w), (float)WINRT_PHYSICAL_PIXELS_TO_DIPS(window->pending.h));
-    data->appView->TryResizeView(size);
+    bool didSetSize = data->appView->TryResizeView(size);
+    if (!didSetSize)
+    {
+        int w = WINRT_DIPS_TO_PHYSICAL_PIXELS(data->coreWindow->Bounds.Width);
+        int h = WINRT_DIPS_TO_PHYSICAL_PIXELS(data->coreWindow->Bounds.Height);
+        // Force to sending window resized event
+        window->w = window->pending.w;
+        window->h = window->pending.h;
+        SDL_SendWindowEvent(window, SDL_EVENT_WINDOW_RESIZED, w, h);
+    }
 #endif
 }
 
