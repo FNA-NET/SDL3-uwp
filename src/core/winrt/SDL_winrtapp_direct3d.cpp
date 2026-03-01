@@ -230,8 +230,8 @@ void SDL_WinRTApp::OnOrientationChanged(Object ^ sender)
     SDL_Window *window = WINRT_GlobalSDLWindow;
     if (window) {
         SDL_WindowData *data = window->internal;
-        int w = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Width));
-        int h = WINRT_DIPS_TO_PHYSICAL_PIXELS((int)SDL_floorf(data->coreWindow->Bounds.Height));
+        int w = WINRT_DIPS_TO_PHYSICAL_PIXELS(data->coreWindow->Bounds.Width);
+        int h = WINRT_DIPS_TO_PHYSICAL_PIXELS(data->coreWindow->Bounds.Height);
         SDL_SendWindowEvent(WINRT_GlobalSDLWindow, SDL_EVENT_WINDOW_RESIZED, w, h);
     }
 #endif
