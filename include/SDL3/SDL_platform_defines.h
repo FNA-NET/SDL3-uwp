@@ -421,7 +421,7 @@
 
 
 /* This is to support generic "any GDK" separate from a platform-specific GDK */
-#if defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)
+#if (defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
 
 /**
  * A preprocessor macro that is only defined if compiling for Microsoft GDK on

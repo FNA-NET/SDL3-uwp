@@ -23,7 +23,7 @@
 #ifndef SDL_D3D12_H
 #define SDL_D3D12_H
 
-#if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) || defined(SDL_PLATFORM_WINRT)
 
 /* From the DirectX-Headers build system:
  * "MinGW has RPC headers which define old versions, and complain if D3D
@@ -59,7 +59,7 @@
 
 #if defined(SDL_PLATFORM_XBOXONE)
 #include <d3d12_x.h>
-#else // SDL_PLATFORM_XBOXSERIES
+#elif defined(SDL_PLATFORM_XBOXSERIES) && !defined(SDL_PLATFORM_WINRT)
 #include <d3d12_xs.h>
 #endif
 

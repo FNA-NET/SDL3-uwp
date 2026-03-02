@@ -28,7 +28,7 @@
 #include "../../video/directx/SDL_d3d12.h"
 #include "../SDL_sysgpu.h"
 
-#ifdef __IDXGIInfoQueue_INTERFACE_DEFINED__
+#if defined(__IDXGIInfoQueue_INTERFACE_DEFINED__) && !defined(SDL_PLATFORM_WINRT)
 #define HAVE_IDXGIINFOQUEUE
 #endif
 
@@ -40,7 +40,7 @@
 #define g_BlitFrom3D        D3D12_BlitFrom3D
 #define g_BlitFromCube      D3D12_BlitFromCube
 #define g_BlitFromCubeArray D3D12_BlitFromCubeArray
-#if defined(SDL_PLATFORM_XBOXSERIES)
+#if defined(SDL_PLATFORM_XBOXSERIES) && !defined(SDL_PLATFORM_WINRT)
 #include "D3D12_Blit_Series.h"
 #elif defined(SDL_PLATFORM_XBOXONE)
 #include "D3D12_Blit_One.h"
@@ -85,14 +85,16 @@
 
 // Defines
 #if defined(_WIN32)
-#if defined(SDL_PLATFORM_XBOXSERIES)
+#if defined(SDL_PLATFORM_XBOXSERIES) && !defined(SDL_PLATFORM_WINRT)
 #define D3D12_DLL "d3d12_xs.dll"
 #elif defined(SDL_PLATFORM_XBOXONE)
 #define D3D12_DLL "d3d12_x.dll"
 #else
 #define D3D12_DLL "d3d12.dll"
+#if !defined(SDL_PLATFORM_WINRT)
 #define USE_PIX_RUNTIME
 #define WINPIXEVENTRUNTIME_DLL "WinPixEventRuntime.dll"
+#endif
 #endif
 #define DXGI_DLL      "dxgi.dll"
 #define DXGIDEBUG_DLL "dxgidebug.dll"
@@ -149,7 +151,7 @@ static const IID D3D_IID_IDXGIFactory4 = { 0x1bc6ea02, 0xef36, 0x464f, { 0xbf, 0
 static const IID D3D_IID_IDXGIFactory5 = { 0x7632e1f5, 0xee65, 0x4dca, { 0x87, 0xfd, 0x84, 0xcd, 0x75, 0xf8, 0x83, 0x8d } };
 static const IID D3D_IID_IDXGIFactory6 = { 0xc1b6694f, 0xff09, 0x44a9, { 0xb0, 0x3c, 0x77, 0x90, 0x0a, 0x0a, 0x1d, 0x17 } };
 static const IID D3D_IID_IDXGIAdapter1 = { 0x29038f61, 0x3839, 0x4626, { 0x91, 0xfd, 0x08, 0x68, 0x79, 0x01, 0x1a, 0x05 } };
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
 static const IID D3D_IID_IDXGIDevice1 = { 0x77db970f, 0x6276, 0x48ba, { 0xba, 0x28, 0x07, 0x01, 0x43, 0xb4, 0x39, 0x2c } };
 #else
 static const IID D3D_IID_IDXGIDevice = { 0x54ec77fa, 0x1377, 0x44e6, { 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c } };
@@ -831,7 +833,7 @@ typedef struct D3D12Sampler
 typedef struct D3D12WindowData
 {
     SDL_Window *window;
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     D3D12XBOX_FRAME_PIPELINE_TOKEN frameToken;
 #else
     IDXGISwapChain3 *swapchain;
@@ -869,6 +871,10 @@ struct D3D12Renderer
     // Reference to the parent device
     SDL_GPUDevice *sdlGPUDevice;
 
+#ifdef SDL_PLATFORM_WINRT
+    IDXGIFactory4 *factory;
+    IDXGIAdapter1 *adapter;
+#endif
 #if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
     IDXGIDebug *dxgiDebug;
     IDXGIFactory4 *factory;
@@ -885,7 +891,9 @@ struct D3D12Renderer
 #endif
     ID3D12Debug *d3d12Debug;
     BOOL supportsTearing;
+#ifndef SDL_PLATFORM_WINRT
     SDL_SharedObject *d3d12_dll;
+#endif
     ID3D12Device *device;
     PFN_D3D12_SERIALIZE_ROOT_SIGNATURE pD3D12SerializeRootSignature;
     char *semantic;
@@ -1711,10 +1719,12 @@ static void D3D12_INTERNAL_DestroyRenderer(D3D12Renderer *renderer)
         renderer->dxgiDebug = NULL;
     }
 #endif
+#ifndef SDL_PLATFORM_WINRT
     if (renderer->d3d12_dll) {
         SDL_UnloadObject(renderer->d3d12_dll);
         renderer->d3d12_dll = NULL;
     }
+#endif
 #if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
     if (renderer->dxgi_dll) {
         SDL_UnloadObject(renderer->dxgi_dll);
@@ -3736,7 +3746,7 @@ static D3D12Buffer *D3D12_INTERNAL_CreateBuffer(
     if (usageFlags & SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE) {
         resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     if (usageFlags & SDL_GPU_BUFFERUSAGE_INDIRECT) {
         resourceFlags |= D3D12XBOX_RESOURCE_FLAG_ALLOW_INDIRECT_BUFFER;
     }
@@ -6601,10 +6611,15 @@ static bool D3D12_SupportsPresentMode(
 
     switch (presentMode) {
     case SDL_GPU_PRESENTMODE_IMMEDIATE:
+#if defined(SDL_PLATFORM_WINRT)
+        return false;
+#else
+        return true;
+#endif
     case SDL_GPU_PRESENTMODE_VSYNC:
         return true;
     case SDL_GPU_PRESENTMODE_MAILBOX:
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) || defined(SDL_PLATFORM_WINRT)
         return false;
 #else
         return true;
@@ -6615,7 +6630,7 @@ static bool D3D12_SupportsPresentMode(
     }
 }
 
-#if defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
 static bool D3D12_INTERNAL_CreateSwapchain(
     D3D12Renderer *renderer,
     D3D12WindowData *windowData,
@@ -6853,6 +6868,12 @@ static bool D3D12_INTERNAL_ResizeSwapchain(
         SDL_free(windowData->textureContainers[i].textures);
     }
 
+    int swapChainFlags;
+#ifdef SDL_PLATFORM_WINRT
+    swapChainFlags = 0;
+#else
+    swapChainFlags = renderer->supportsTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+#endif
     // Resize the swapchain
     HRESULT res = IDXGISwapChain_ResizeBuffers(
         windowData->swapchain,
@@ -6860,7 +6881,7 @@ static bool D3D12_INTERNAL_ResizeSwapchain(
         0, // use client window width
         0, // use client window height
         DXGI_FORMAT_UNKNOWN, // Keep the old format
-        renderer->supportsTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
+        swapChainFlags);
     CHECK_D3D12_ERROR_AND_RETURN("Could not resize swapchain buffers", false);
 
     // Create texture object for the swapchain
@@ -6912,21 +6933,11 @@ static bool D3D12_INTERNAL_CreateSwapchain(
     SDL_GPUSwapchainComposition swapchainComposition,
     SDL_GPUPresentMode presentMode)
 {
-    HWND dxgiHandle;
     DXGI_SWAP_CHAIN_DESC1 swapchainDesc;
-    DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc;
     DXGI_FORMAT swapchainFormat;
-    IDXGIFactory1 *pParent;
     IDXGISwapChain1 *swapchain;
     IDXGISwapChain3 *swapchain3;
     HRESULT res;
-
-    // Get the DXGI handle
-#ifdef _WIN32
-    dxgiHandle = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(windowData->window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-#else
-    dxgiHandle = (HWND)windowData->window;
-#endif
 
     swapchainFormat = SwapchainCompositionToTextureFormat[swapchainComposition];
 
@@ -6941,30 +6952,61 @@ static bool D3D12_INTERNAL_CreateSwapchain(
     swapchainDesc.SampleDesc.Quality = 0;
     swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapchainDesc.BufferCount = windowData->swapchainTextureCount;
-    swapchainDesc.Scaling = DXGI_SCALING_NONE;
     swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapchainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-    swapchainDesc.Flags = 0;
     swapchainDesc.Stereo = 0;
 
-    // Initialize the fullscreen descriptor (if needed)
+#ifdef SDL_PLATFORM_WINRT
+    // UWP does not support DXGI_SCALING_NONE with CreateSwapChainForCoreWindow
+    swapchainDesc.Scaling = DXGI_SCALING_ASPECT_RATIO_STRETCH;
+    swapchainDesc.Flags = 0;
+#else
+    swapchainDesc.Scaling = DXGI_SCALING_NONE;
+    if (renderer->supportsTearing) {
+        swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    } else {
+        swapchainDesc.Flags = 0;
+    }
+#endif
+
+#ifdef SDL_PLATFORM_WINRT
+    // UWP: get the CoreWindow as IUnknown*
+    IUnknown *coreWindow = (IUnknown *)SDL_GetPointerProperty(
+        SDL_GetWindowProperties(windowData->window),
+        SDL_PROP_WINDOW_WINRT_WINDOW_POINTER,
+        NULL);
+    if (coreWindow == NULL) {
+        SET_STRING_ERROR_AND_RETURN("Could not get CoreWindow for swapchain creation", false);
+    }
+
+    res = IDXGIFactory2_CreateSwapChainForCoreWindow(
+        (IDXGIFactory2 *)renderer->factory,
+        (IUnknown *)renderer->commandQueue,
+        coreWindow,
+        &swapchainDesc,
+        NULL,
+        &swapchain);
+    CHECK_D3D12_ERROR_AND_RETURN("Could not create swapchain for CoreWindow", false);
+#else
+    HWND dxgiHandle;
+    DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc;
+    IDXGIFactory1 *pParent;
+
+    dxgiHandle = (HWND)SDL_GetPointerProperty(
+        SDL_GetWindowProperties(windowData->window),
+        SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+        NULL);
+
+    // Initialize the fullscreen descriptor
     fullscreenDesc.RefreshRate.Numerator = 0;
     fullscreenDesc.RefreshRate.Denominator = 0;
     fullscreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
     fullscreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
     fullscreenDesc.Windowed = true;
 
-    if (renderer->supportsTearing) {
-        swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-    } else {
-        swapchainDesc.Flags = 0;
-    }
-
-#ifndef SDL_PLATFORM_WINRT
     if (!IsWindow(dxgiHandle)) {
         return false;
     }
-#endif
 
     // Create the swapchain!
     res = IDXGIFactory4_CreateSwapChainForHwnd(
@@ -6976,6 +7018,7 @@ static bool D3D12_INTERNAL_CreateSwapchain(
         NULL,
         &swapchain);
     CHECK_D3D12_ERROR_AND_RETURN("Could not create swapchain", false);
+#endif
 
     res = IDXGISwapChain1_QueryInterface(
         swapchain,
@@ -6991,6 +7034,7 @@ static bool D3D12_INTERNAL_CreateSwapchain(
             SwapchainCompositionToColorSpace[swapchainComposition]);
     }
 
+#ifndef SDL_PLATFORM_WINRT
     /*
      * The swapchain's parent is a separate factory from the factory that
      * we used to create the swapchain, and only that parent can be used to
@@ -7023,6 +7067,7 @@ static bool D3D12_INTERNAL_CreateSwapchain(
         // We're done with the parent now
         IDXGIFactory1_Release(pParent);
     }
+#endif
 
     IDXGISwapChain3_GetDesc1(swapchain3, &swapchainDesc);
     CHECK_D3D12_ERROR_AND_RETURN("Failed to retrieve swapchain descriptor!", false);
@@ -7569,7 +7614,7 @@ static bool D3D12_INTERNAL_AcquireSwapchainTexture(
         windowData->inFlightFences[windowData->frameCounter] = NULL;
     }
 
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     // FIXME: Should this happen before the inFlightFences stuff above?
     windowData->frameToken = D3D12XBOX_FRAME_PIPELINE_TOKEN_NULL;
     renderer->device->WaitFrameEventX(D3D12XBOX_FRAME_EVENT_ORIGIN, INFINITE, NULL, D3D12XBOX_WAIT_FRAME_EVENT_FLAG_NONE, &windowData->frameToken);
@@ -7982,7 +8027,7 @@ static bool D3D12_Submit(
         D3D12PresentData *presentData = &d3d12CommandBuffer->presentDatas[i];
         D3D12WindowData *windowData = presentData->windowData;
 
-#if defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
         D3D12XBOX_PRESENT_PLANE_PARAMETERS planeParams;
         SDL_zero(planeParams);
         planeParams.Token = windowData->frameToken;
@@ -8280,7 +8325,7 @@ static bool D3D12_SupportsSampleCount(
     D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS featureData;
     HRESULT res;
 
-#if defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     featureData.Flags = (D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG)0;
 #else
     featureData.Flags = (D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS)0;
@@ -8542,6 +8587,7 @@ static bool D3D12_PrepareDriver(SDL_VideoDevice *_this, SDL_PropertiesID props)
     /* If Windows 11 is running and the app has neither DXIL nor TIER2
      * requirements, we can skip doing any device checks entirely
      */
+#ifndef SDL_PLATFORM_WINRT
     if (!needs_64UAVs && !has_dxil && WIN_IsWindows11OrGreater()) {
         IDXGIAdapter1_Release(adapter);
         IDXGIFactory1_Release(factory);
@@ -8551,6 +8597,7 @@ static bool D3D12_PrepareDriver(SDL_VideoDevice *_this, SDL_PropertiesID props)
 
         return true;
     }
+#endif
 
     res = pD3D12CreateDevice(
         (IUnknown *)adapter,
@@ -8650,6 +8697,9 @@ static bool D3D12_INTERNAL_TryInitializeDXGIDebug(D3D12Renderer *renderer)
 
 static bool D3D12_INTERNAL_TryInitializeD3D12Debug(D3D12Renderer *renderer)
 {
+#ifdef SDL_PLATFORM_WINRT
+    return false;
+#else
     PFN_D3D12_GET_DEBUG_INTERFACE pD3D12GetDebugInterface;
     HRESULT res;
 
@@ -8667,6 +8717,7 @@ static bool D3D12_INTERNAL_TryInitializeD3D12Debug(D3D12Renderer *renderer)
 
     ID3D12Debug_EnableDebugLayer(renderer->d3d12Debug);
     return true;
+#endif
 }
 
 #if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
@@ -8819,7 +8870,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     D3D12Renderer *renderer;
     HRESULT res;
 
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     PFN_D3D12_XBOX_CREATE_DEVICE D3D12XboxCreateDeviceFunc;
     D3D12XBOX_CREATE_DEVICE_PARAMETERS createDeviceParams;
 #else
@@ -8842,15 +8893,17 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     renderer = (D3D12Renderer *)SDL_calloc(1, sizeof(D3D12Renderer));
 
     bool hasDxgiDebug = false;
-#if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) || defined(SDL_PLATFORM_WINRT)
+#ifndef SDL_PLATFORM_WINRT
     // Load the DXGI library
     renderer->dxgi_dll = SDL_LoadObject(DXGI_DLL);
     if (renderer->dxgi_dll == NULL) {
         D3D12_INTERNAL_DestroyRenderer(renderer);
         SET_STRING_ERROR_AND_RETURN("Could not find " DXGI_DLL, NULL);
     }
+#endif
 
-#ifdef HAVE_IDXGIINFOQUEUE
+#if defined(HAVE_IDXGIINFOQUEUE)
     // Initialize the DXGI debug layer, if applicable
     if (debugMode) {
         hasDxgiDebug = D3D12_INTERNAL_TryInitializeDXGIDebug(renderer);
@@ -8886,6 +8939,9 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
 #endif
 
     // Load the CreateDXGIFactory1 function
+#if defined(SDL_PLATFORM_WINRT)
+    pCreateDXGIFactory1 = CreateDXGIFactory1;
+#else
     pCreateDXGIFactory1 = (pfnCreateDXGIFactory1)SDL_LoadFunction(
         renderer->dxgi_dll,
         CREATE_DXGI_FACTORY1_FUNC);
@@ -8893,6 +8949,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         D3D12_INTERNAL_DestroyRenderer(renderer);
         SET_STRING_ERROR_AND_RETURN("Could not load function: " CREATE_DXGI_FACTORY1_FUNC, NULL);
     }
+#endif
 
     // Create the DXGI factory
     res = pCreateDXGIFactory1(
@@ -8915,6 +8972,9 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     IDXGIFactory1_Release(factory1);
 
     // Check for explicit tearing support
+#ifdef SDL_PLATFORM_WINRT
+    renderer->supportsTearing = false;
+#else
     res = IDXGIFactory4_QueryInterface(
         renderer->factory,
         D3D_GUID(D3D_IID_IDXGIFactory5),
@@ -8930,6 +8990,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         }
         IDXGIFactory5_Release(factory5);
     }
+#endif
 
     // Select the appropriate device for rendering
     res = IDXGIFactory4_QueryInterface(
@@ -9003,15 +9064,17 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     }
 #endif
 
+#ifndef SDL_PLATFORM_WINRT
     // Load the D3D library
     renderer->d3d12_dll = SDL_LoadObject(D3D12_DLL);
     if (renderer->d3d12_dll == NULL) {
         D3D12_INTERNAL_DestroyRenderer(renderer);
         SET_STRING_ERROR_AND_RETURN("Could not find " D3D12_DLL, NULL);
     }
+#endif
 
     // Load the CreateDevice function
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     D3D12XboxCreateDeviceFunc = (PFN_D3D12_XBOX_CREATE_DEVICE)SDL_LoadFunction(
         renderer->d3d12_dll,
         "D3D12XboxCreateDevice");
@@ -9019,6 +9082,9 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         D3D12_INTERNAL_DestroyRenderer(renderer);
         SET_STRING_ERROR_AND_RETURN("Could not load function: D3D12XboxCreateDevice", NULL);
     }
+#elif defined(SDL_PLATFORM_WINRT)
+    // On WinRT, we have to use D3D12CreateDevice from the Windows SDK, which is linked at compile time
+    pD3D12CreateDevice = D3D12CreateDevice;
 #else
     pD3D12CreateDevice = (PFN_D3D12_CREATE_DEVICE)SDL_LoadFunction(
         renderer->d3d12_dll,
@@ -9029,6 +9095,10 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     }
 #endif
 
+#if defined(SDL_PLATFORM_WINRT)
+    // On WinRT, we have to use D3D12SerializeRootSignature from the Windows SDK, which is linked at compile time
+    renderer->pD3D12SerializeRootSignature = D3D12SerializeRootSignature;
+#else
     renderer->pD3D12SerializeRootSignature = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)SDL_LoadFunction(
         renderer->d3d12_dll,
         D3D12_SERIALIZE_ROOT_SIGNATURE_FUNC);
@@ -9036,6 +9106,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         D3D12_INTERNAL_DestroyRenderer(renderer);
         SET_STRING_ERROR_AND_RETURN("Could not load function: " D3D12_SERIALIZE_ROOT_SIGNATURE_FUNC, NULL);
     }
+#endif
 
     // Initialize the D3D12 debug layer, if applicable
     if (debugMode) {
@@ -9063,7 +9134,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     }
 
     // Create the D3D12Device
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     if (s_Device != NULL) {
         renderer->device = s_Device;
     } else {
@@ -9104,11 +9175,13 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         CHECK_D3D12_ERROR_AND_RETURN("Could not create D3D12Device", NULL);
     }
 
+#ifndef SDL_PLATFORM_WINRT
     // Initialize the D3D12 debug info queue, if applicable
     if (debugMode) {
         D3D12_INTERNAL_TryInitializeD3D12DebugInfoQueue(renderer);
         D3D12_INTERNAL_TryInitializeD3D12DebugInfoLogger(renderer);
     }
+#endif
 #endif
 
     // Check UMA
@@ -9357,7 +9430,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     // Blit resources
     D3D12_INTERNAL_InitBlitResources(renderer);
 
-#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+#if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(SDL_PLATFORM_WINRT)
     res = renderer->device->SetFrameIntervalX(
         NULL,
         D3D12XBOX_FRAME_INTERVAL_60_HZ,

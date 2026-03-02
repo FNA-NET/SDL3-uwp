@@ -202,6 +202,8 @@ int testdraw_main(int argc, char *argv[])
         i += consumed;
     }
 
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "gpu");
+
     if (!SDLTest_CommonInit(state)) {
         SDLTest_CommonQuit(state);
         return 2;

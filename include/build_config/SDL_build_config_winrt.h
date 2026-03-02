@@ -221,6 +221,9 @@
 #define SDL_VIDEO_RENDER_OGL_ES2 1
 #endif
 
+#define SDL_GPU_D3D12 1
+#define SDL_VIDEO_RENDER_GPU 1
+
 /* Enable system power support */
 #define SDL_POWER_WINRT 1
 
